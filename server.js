@@ -35,8 +35,8 @@ app.use((error, req, res, next) => {
     console.log(error);
     const statusCode = error.statusCode || 500;
     const data = error.data;
-    const ErrorMessage = error.message;
-    const ErrorDesc = error.description;
+    const ErrorMessage = error.message || error.error;
+    const ErrorDesc = error.description || error.error_description;
     res.status(statusCode).json({ ErrorMessage: ErrorMessage, ErrorDescription: ErrorDesc, data: data, status: 0 });
 });
 
@@ -47,6 +47,9 @@ app.get("/", (req, res) => {
 
 // Define models and it's relationship.
 const User = require('./app/models/user');
+const Token = require('./app/models/token');
+
+Token.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
 
 /*
  * Sync MySQL database.
