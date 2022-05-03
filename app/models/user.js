@@ -2,19 +2,18 @@ const Sequelize = require('sequelize');
 const sequelize = require('../utils/database');
 
 const User = sequelize.define('user' , {
-    id: {
-        type: Sequelize.STRING(50),
-        primaryKey: true,
-        allowNull: false
+    name: {
+        type: Sequelize.STRING
     },
     email: {
         type: Sequelize.STRING,
         allowNull: false
     },
-    name: {
-        type: Sequelize.STRING
+    password: {
+        type: Sequelize.STRING,
+        allowNull: false
     },
-    image: {
+    picture: {
         type: Sequelize.TEXT,
         defaultValue: null
     },
@@ -24,25 +23,31 @@ const User = sequelize.define('user' , {
     phone: {
         type: Sequelize.STRING
     },
+    stripe_id : {
+        type : Sequelize.TEXT
+    },
+    is_test: {
+        type: Sequelize.TINYINT(1),
+        defaultValue: 1
+    },
     is_verify: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: 0
+        type: Sequelize.TINYINT(1),
+        defaultValue: 1
     },
     is_active: {
-        type: Sequelize.BOOLEAN,
+        type: Sequelize.TINYINT(1),
+        defaultValue: 1
+    },
+    is_delete: {
+        type: Sequelize.TINYINT(1),
         defaultValue: 0
     },
-    resetToken:{
-        type: Sequelize.TEXT,
-        defaultValue: null
+    createdAt: {
+        type: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
     },
-    resetTokenExpiration: {
-        type: Sequelize.DATE,
-        defaultValue: null
+    updatedAt: {
+        type: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
     }
-},
-{
-    timestamps: true
-})
+});
 
 module.exports = User;
