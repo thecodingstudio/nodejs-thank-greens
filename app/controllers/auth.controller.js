@@ -1,6 +1,7 @@
 require('dotenv').config();
 const request = require('request');
 const bcrypt = require('bcryptjs')
+const client = require('twilio')(process.env.ACCOUNT_SID, process.env.AUTH_TOKEN);
 let json_body;
 
 // Import models.
@@ -286,6 +287,68 @@ exports.refreshToken = (req, res, next) => {
     const error = new Error('Getting refresh token failed!');
     error.statusCode = 422;
     throw error;
+  }
+}
+
+/*
+ * Generate OTP for phone number verificatio.
+*/
+exports.generateOTP = async (req, res, next) => {
+  const country_code = req.body.country_code
+  const number = req.body.phone_number;
+
+  // Send OTP through twilio.
+  try {
+      const otp = await client
+          .verify
+          .services(process.env.SERVICE_ID)
+          .verifications
+          .create({
+              to: `${country_code}${number}`,
+              channel: req.body.channel
+          });
+
+      // Send success response.
+      return res.status(200).json({ message: "OTP sent Successfuly", status: 1 });
+  }
+  catch (err) {
+      if (!err.statusCode) {
+          err.statusCode = 500;
+      }
+      next(err);
+  }
+}
+
+/*
+* Verify OTP.
+*/
+exports.verifyOTP = async (req, res, next) => {
+  const country_code = req.body.country_code
+  const number = req.body.phone_number;
+
+  // Verify OTP.
+  try {
+      const otp = await client
+          .verify
+          .services(process.env.SERVICE_ID)
+          .verificationChecks
+          .create({
+              to: `${country_code}${number}`,
+              code: req.body.otp
+          });
+
+      // Chech whether OTP is match or not.
+      if (otp.valid == true) {
+          return res.status(200).json({ message: "Mobile Number verified!", status: 1 });
+      } else {
+          return res.status(400).json({ error: "Invalid OTP entered!", status: 0 })
+      }
+  }
+  catch (err) {
+      if (!err.statusCode) {
+          err.statusCode = 500;
+      }
+      next(err);
   }
 }
 
