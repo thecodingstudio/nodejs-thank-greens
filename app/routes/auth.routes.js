@@ -12,6 +12,10 @@ router.post('/login', authController.Login);
 
 router.post('/refresh-token', authController.refreshToken);
 
+router.post('/generate-OTP', authController.generateOTP);
+
+router.post('/verify-OTP', authController.verifyOTP);
+
 router.post('/forgot-password', authController.forgotPassword);
 
 router.post('/change-password', is_auth, authController.changePassword);
