@@ -1,16 +1,13 @@
 require('dotenv').config();
-const bcrypt = require('bcryptjs');
-const { body } = require('express-validator');
 const request = require('request');
-const axios = require("axios").default;
+let json_body;
 
 // Import models.
 const User = require('../models/user');
 
 /*
- * Regiser new user.
+ * Regiser new user in auth0.
  * Check whether user is already exist or not.
- * If not then creat new user.
  * Create customer on Stripe.
 */
 exports.Register = (req, res, next) => {
@@ -19,66 +16,74 @@ exports.Register = (req, res, next) => {
     .then(async user => {
 
       // Check whether user is already exists or not.
-      // if (user) {
-      //   const error = new Error('User already exists!');
-      //   error.statusCode = 409;
-      //   throw error;
-      // }
+      if (user) {
+        const error = new Error('User already exists!');
+        error.statusCode = 409;
+        throw error;
+      }
 
-      let resp;
-      // Create user with encrypted password.
+      const options = {
+        method: 'POST',
+        url: 'https://thank-greens.us.auth0.com/dbconnections/signup',
+        headers: { 'content-type': 'application/json' },
+        form: {
+          client_id: process.env.CLIENT_ID,
+          connection: process.env.CONNECTION,
+          email: req.body.email,
+          password: req.body.password,
+          name: req.body.name,
+          picture: "http://example.org/jdoe.png"
+        }
+      }
+
+      // Make sing-up request to third party Auth0 api.
       try {
 
-        const options = {
-          method: 'POST',
-          url: 'https://thank-greens.us.auth0.com/dbconnections/signup',
-          headers: { 'content-type': 'application/json' },
-          form: {
-            client_id: 'OZWOkCc5809mQ1JIYUUgs3Md1lvW7OTe',
-            connection: 'Username-Password-Authentication',
-            email: req.body.email,
-            password: req.body.password,
-            username: req.body.name,
-            name: req.body.name,
-            picture: "http://example.org/jdoe.png",
-            user_metadata: {
-              country_code: req.body.country_code,
-              phone: req.body.phone
-            }
-          }
-        };
-
         request(options, async (error, response, body) => {
-          resp = JSON.parse(body);
-          if (resp.statusCode === 400) {
-            return next(resp);
+
+          if (error) {
+            console.log(error);
+            return res.json(500).json({
+              ErrorMessage: 'Some Auth0 error while making singup request!',
+              status: 0
+            })
           }
 
-          try {
-            const payload = {
-              id: resp._id,
-              name: req.body.name,
-              email: req.body.email,
-              country_code: req.body.country_code,
-              phone: req.body.phone
-            }
-            const new_user = await User.create(payload);
+          // Check whether any logical error is occurd or not.
+          json_body = JSON.parse(body);
+          if (json_body.statusCode === 400) {
+            return next(json_body);
+          }
 
+          // Save additional info of user in database.
+          try {
+
+            const user = await User.findByPk(json_body.id);
+            user.country_code = req.body.country_code;
+            user.phone = req.body.phone;
+            await user.save();
+
+            // Send success responce.
             return res.status(200).json({
               message: "User created successfully",
               data: {
-                id: new_user.id,
-                name: new_user.name,
-                data: resp
+                id: json_body.id,
+                name: json_body.name,
+                email: json_body.email
               },
               status: 1
-            });
-          } catch (error) {
-            console.log(error);
-            return next(error);
+            })
+
+          }
+          catch (err) {
+            console.log(err)
+            return res.json(500).json({
+              ErrorMessage: 'Some database error while creating user!',
+              status: 0
+            })
           }
 
-        });
+        })
       }
       catch (err) {
         console.log(err)
@@ -86,7 +91,6 @@ exports.Register = (req, res, next) => {
         error.statusCode = 422;
         throw error;
       }
-
 
     })
     .catch(err => {
@@ -105,7 +109,7 @@ exports.Login = (req, res, next) => {
 
   const email = req.body.email;
   const password = req.body.password;
-  let resp;
+
   var options = {
     method: 'POST',
     url: 'https://thank-greens.us.auth0.com/oauth/token',
@@ -114,28 +118,54 @@ exports.Login = (req, res, next) => {
       grant_type: 'password',
       username: email,
       password: password,
-      audience: 'https://www.thank-greens.com/',
-      scope: 'openid offline_access',
-      client_id: 'OZWOkCc5809mQ1JIYUUgs3Md1lvW7OTe',
-      client_secret: 'hJlRZITNumXAD9c51CYksk78fyrL1Ag92h5jinLfRNxNOc0yoPGIyGt7Mqw0Ir4a'
+      audience: process.env.AUDIENCE,
+      scope: 'offline_access',
+      client_id: process.env.CLIENT_ID,
+      client_secret: process.env.CLIENT_SECRET
     }
   };
 
-  request(options, function (error, response, body) {
-    resp = JSON.parse(body);
-    if (resp.statusCode === 400) {
-      return next(resp);
-    }
+  // Make login request to third party Auth0 api.
+  try {
 
-    return res.status(200).json({
-      message: "Login successfully.",
-      data: JSON.parse(body),
-      status: 1
+    request(options, function (error, response, body) {
+      if (error) {
+        console.log(error);
+        return res.json(500).json({
+          ErrorMessage: 'Some Auth0 error while making login request!',
+          status: 0
+        })
+      }
+
+      // Check whether any logical error is occurd or not.
+      json_body = JSON.parse(body);
+      if (json_body.statusCode === 400) {
+        return next(json_body);
+      }
+
+      // Send success responce.
+      return res.status(200).json({
+        message: "Login successfully.",
+        access_token: json_body.access_token,
+        refresh_token: json_body.refresh_token,
+        expires_in: json_body.expires_in,
+        token_type: json_body.token_type,
+        status: 1
+      });
+
     });
-
-  });
+  }
+  catch (err) {
+    console.log(err)
+    const error = new Error('Login failed!');
+    error.statusCode = 422;
+    throw error;
+  }
 }
 
+/*
+ * Refresh token controller.
+*/
 exports.refreshToken = (req, res, next) => {
 
   var options = {
@@ -145,44 +175,92 @@ exports.refreshToken = (req, res, next) => {
     form:
     {
       grant_type: 'refresh_token',
-      client_id: 'OZWOkCc5809mQ1JIYUUgs3Md1lvW7OTe',
-      client_secret: 'hJlRZITNumXAD9c51CYksk78fyrL1Ag92h5jinLfRNxNOc0yoPGIyGt7Mqw0Ir4a',
+      client_id: process.env.CLIENT_ID,
+      client_secret: process.env.CLIENT_SECRET,
       refresh_token: req.body.refresh_token
     }
   };
 
-  request(options, function (error, response, body) {
-    if (error) throw new Error(error);
+  // Make refresh token request to third party Auth0 api.
+  try {
+    request(options, function (error, response, body) {
+      if (error) {
+        console.log(error);
+        return res.json(500).json({
+          ErrorMessage: 'Some Auth0 error while making refresh_token request!',
+          status: 0
+        })
+      }
 
-    return res.status(200).json({
-      message: "Get access token successfully.",
-      data: JSON.parse(body),
-      status: 1
+      // Check whether any logical error is occurd or not.
+      json_body = JSON.parse(body);
+      if (json_body.statusCode === 400) {
+        return next(json_body);
+      }
+
+      // Send success responce.
+      return res.status(200).json({
+        message: "Get access token successfully.",
+        access_token: json_body.access_token,
+        expires_in: json_body.expires_in,
+        token_type: json_body.token_type,
+        status: 1
+      });
+
     });
-  });
+
+  }
+  catch (err) {
+    console.log(err)
+    const error = new Error('Getting refresh token failed!');
+    error.statusCode = 422;
+    throw error;
+  }
 }
 
-exports.changePassword = (req, res, next) => {
+/*
+ * Forgot password controller.
+*/
+exports.forgotPassword = (req, res, next) => {
+
   var options = {
     method: 'POST',
     url: 'https://thank-greens.us.auth0.com/dbconnections/change_password',
     headers: { 'content-type': 'application/json' },
     form:
     {
-      client_id: 'OZWOkCc5809mQ1JIYUUgs3Md1lvW7OTe',
+      client_id: process.env.CLIENT_ID,
       username: req.body.email,
-      connection: 'Username-Password-Authentication'
+      connection: process.env.CONNECTION
     }
   }
 
-  request(options, function (error, response, body) {
-    if (error) throw new Error(error);
-    
-    return res.status(200).json({
-      message: "Reset password link send successfully",
-      data: body,
-      status: 1
-    });
-  });
+  try {
 
+    // Make forgot_password request to third party Auth0 api.
+    request(options, function (error, response, body) {
+      if (error) {
+        console.log(error);
+        return res.json(500).json({
+          ErrorMessage: 'Some Auth0 error while making forgot_password request!',
+          status: 0
+        })
+      }
+  
+      // Send success reponse.
+      return res.status(200).json({
+        message: "Reset password link send to your email successfully",
+        status: 1
+      });
+
+    });
+    
+  } 
+  catch (err) {
+    console.log(err)
+    const error = new Error('Forgot password failed!');
+    error.statusCode = 422;
+    throw error;
+  }
+  
 }
