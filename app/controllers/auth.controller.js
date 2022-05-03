@@ -1,9 +1,11 @@
 require('dotenv').config();
 const request = require('request');
+const bcrypt = require('bcryptjs')
 let json_body;
 
 // Import models.
 const User = require('../models/user');
+const Token = require('../models/token');
 
 /*
  * Regiser new user in auth0.
@@ -105,10 +107,19 @@ exports.Register = (req, res, next) => {
 /*
  * Login controller.
 */
-exports.Login = (req, res, next) => {
+exports.Login = async (req, res, next) => {
 
   const email = req.body.email;
   const password = req.body.password;
+
+  const user = await User.findOne({ where: { email: email } });
+
+  // Check whether user is already exist or not.
+  if (!user) {
+    const error = new Error('User not exists!');
+    error.statusCode = 404;
+    throw error;
+  }
 
   var options = {
     method: 'POST',
@@ -128,7 +139,7 @@ exports.Login = (req, res, next) => {
   // Make login request to third party Auth0 api.
   try {
 
-    request(options, function (error, response, body) {
+    request(options, async (error, response, body) => {
       if (error) {
         console.log(error);
         return res.json(500).json({
@@ -139,19 +150,79 @@ exports.Login = (req, res, next) => {
 
       // Check whether any logical error is occurd or not.
       json_body = JSON.parse(body);
-      if (json_body.statusCode === 400) {
+      if (json_body.error) {
         return next(json_body);
       }
 
-      // Send success responce.
-      return res.status(200).json({
-        message: "Login successfully.",
-        access_token: json_body.access_token,
-        refresh_token: json_body.refresh_token,
-        expires_in: json_body.expires_in,
-        token_type: json_body.token_type,
-        status: 1
-      });
+      try {
+
+        const token = await Token.findOne({ where: { userId: user.id } });
+
+        // Chech whether token exist or not.
+        if (token) {
+          token.access_count = token.access_count + 1;
+          token.token = json_body.access_token;
+          token.token_type = json_body.token_type;
+          token.status = 'active';
+          token.expires_in = json_body.expires_in;
+          token.device_token = req.body.device_token;
+          token.device_type = req.body.device_type;
+
+          // Save updated token data.
+          try {
+
+            await token.save();
+
+            // Send success response.
+            return res.status(200).json({
+              message: "Login successfully.",
+              access_token: json_body.access_token,
+              refresh_token: json_body.refresh_token,
+              expires_in: json_body.expires_in,
+              token_type: json_body.token_type,
+              login_count: token.access_count,
+              status: 1
+            });
+
+          }
+          catch (err) {
+            const error = new Error('Token Updation Failed!');
+            error.statusCode = 404;
+            throw error;
+          }
+
+        }
+
+        const payload = {
+          userId: user.id,
+          token: json_body.access_token,
+          status: 'active',
+          expires_in: json_body.expires_in,
+          token_type: json_body.token_type,
+          access_count: 1,
+          device_token: req.body.device_token,
+          device_type: req.body.device_type
+        }
+
+        // Create new token data.
+        const new_token = await Token.create(payload);
+
+        // Send success responce.
+        return res.status(200).json({
+          message: "Login successfully.",
+          access_token: json_body.access_token,
+          refresh_token: json_body.refresh_token,
+          expires_in: json_body.expires_in,
+          token_type: json_body.token_type,
+          login_count: new_token.access_count,
+          status: 1
+        });
+
+      }
+      catch (err) {
+        console.log(err)
+        return res.json({ErrorMessage : "Database error!"})
+      }
 
     });
   }
@@ -246,7 +317,7 @@ exports.forgotPassword = (req, res, next) => {
           status: 0
         })
       }
-  
+
       // Send success reponse.
       return res.status(200).json({
         message: "Reset password link send to your email successfully",
@@ -254,13 +325,78 @@ exports.forgotPassword = (req, res, next) => {
       });
 
     });
-    
-  } 
+
+  }
   catch (err) {
     console.log(err)
     const error = new Error('Forgot password failed!');
     error.statusCode = 422;
     throw error;
   }
-  
+
+}
+
+/*
+ * Change password through current password.
+*/
+exports.changePassword = (req, res, next) => {
+
+  // Find user who send request.
+  User.findOne({ where: { id: req.user_id } })
+    .then(async user => {
+
+      // Cheak Whether user exist or not.
+      if (!user) {
+        const error = new Error('User not exists!');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // Check whether password macth or not.
+      const isEqual = await bcrypt.compare(req.body.currentPassword, user.password);
+      if (!isEqual) {
+        const error = new Error('Invalid Password');
+        error.statusCode = 401;
+        throw error;
+      }
+
+      // Crete new password and encrypt it.
+      const new_password = await bcrypt.hash(req.body.newPassword, 10);
+      user.password = new_password;
+
+      // Save updated password in database.
+      await user.save();
+
+      return res.status(200).json({ message: 'Password changed successfully..' , status : 1})
+
+    })
+    .catch(err => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
+
+}
+
+/*
+ * Logout controller.
+*/
+exports.Logout = (req, res, next) => {
+
+  Token.findOne({ where: { userId: req.user_id } })
+      .then(async token => {
+          token.token = null;
+          token.token_type = null;
+          token.status = 'expired';
+          await token.save();
+          return res.status(200).json({ message: 'Logout successfully' , status : 1});
+      })
+      .catch(err => {
+          if (!err.statusCode) {
+              err.statusCode = 500;
+          }
+          next(err);
+      });
+
 }
