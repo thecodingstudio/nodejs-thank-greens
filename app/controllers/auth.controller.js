@@ -222,7 +222,7 @@ exports.Login = async (req, res, next) => {
       }
       catch (err) {
         console.log(err)
-        return res.json({ErrorMessage : "Database error!"})
+        return res.json({ ErrorMessage: "Database error!" })
       }
 
     });
@@ -299,23 +299,23 @@ exports.generateOTP = async (req, res, next) => {
 
   // Send OTP through twilio.
   try {
-      const otp = await client
-          .verify
-          .services(process.env.SERVICE_ID)
-          .verifications
-          .create({
-              to: `${country_code}${number}`,
-              channel: req.body.channel
-          });
+    const otp = await client
+      .verify
+      .services(process.env.SERVICE_ID)
+      .verifications
+      .create({
+        to: `${country_code}${number}`,
+        channel: req.body.channel
+      });
 
-      // Send success response.
-      return res.status(200).json({ message: "OTP sent Successfuly", status: 1 });
+    // Send success response.
+    return res.status(200).json({ message: "OTP sent Successfuly", status: 1 });
   }
   catch (err) {
-      if (!err.statusCode) {
-          err.statusCode = 500;
-      }
-      next(err);
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
   }
 }
 
@@ -328,34 +328,42 @@ exports.verifyOTP = async (req, res, next) => {
 
   // Verify OTP.
   try {
-      const otp = await client
-          .verify
-          .services(process.env.SERVICE_ID)
-          .verificationChecks
-          .create({
-              to: `${country_code}${number}`,
-              code: req.body.otp
-          });
+    const otp = await client
+      .verify
+      .services(process.env.SERVICE_ID)
+      .verificationChecks
+      .create({
+        to: `${country_code}${number}`,
+        code: req.body.otp
+      });
 
-      // Chech whether OTP is match or not.
-      if (otp.valid == true) {
-          return res.status(200).json({ message: "Mobile Number verified!", status: 1 });
-      } else {
-          return res.status(400).json({ error: "Invalid OTP entered!", status: 0 })
-      }
+    // Chech whether OTP is match or not.
+    if (otp.valid == true) {
+      return res.status(200).json({ message: "Mobile Number verified!", status: 1 });
+    } else {
+      return res.status(400).json({ error: "Invalid OTP entered!", status: 0 })
+    }
   }
   catch (err) {
-      if (!err.statusCode) {
-          err.statusCode = 500;
-      }
-      next(err);
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
   }
 }
 
 /*
  * Forgot password controller.
 */
-exports.forgotPassword = (req, res, next) => {
+exports.forgotPassword = async (req, res, next) => {
+  const user = await User.findOne({ where: { email: req.body.email } });
+
+  if (!user) {
+    return res.status(404).json({
+      ErrorMessage: "Email dose not exist!",
+      status: 0
+    });
+  }
 
   var options = {
     method: 'POST',
@@ -430,7 +438,7 @@ exports.changePassword = (req, res, next) => {
       // Save updated password in database.
       await user.save();
 
-      return res.status(200).json({ message: 'Password changed successfully..' , status : 1})
+      return res.status(200).json({ message: 'Password changed successfully..', status: 1 })
 
     })
     .catch(err => {
@@ -448,18 +456,18 @@ exports.changePassword = (req, res, next) => {
 exports.Logout = (req, res, next) => {
 
   Token.findOne({ where: { userId: req.user_id } })
-      .then(async token => {
-          token.token = null;
-          token.token_type = null;
-          token.status = 'expired';
-          await token.save();
-          return res.status(200).json({ message: 'Logout successfully' , status : 1});
-      })
-      .catch(err => {
-          if (!err.statusCode) {
-              err.statusCode = 500;
-          }
-          next(err);
-      });
+    .then(async token => {
+      token.token = null;
+      token.token_type = null;
+      token.status = 'expired';
+      await token.save();
+      return res.status(200).json({ message: 'Logout successfully', status: 1 });
+    })
+    .catch(err => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
 
 }

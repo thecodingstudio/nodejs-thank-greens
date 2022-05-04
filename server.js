@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
+const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 
 // Define express server amd port.
@@ -12,6 +13,22 @@ const PORT = process.env.PORT || 8000;
 // Importing routes.
 const auth_route = require('./app/routes/auth.routes');
 const user_route = require('./app/routes/user.routes');
+const store_route = require('./app/routes/store.routes');
+
+// Multer setup.
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'images/');
+    },
+
+    filename: function (req, file, cb) {
+        cb(null, uuidv4().split('-')[4] + '_' + file.originalname);
+    }
+});
+
+// Parse multer request.
+app.use(multer({ storage: storage }).array('image'));
+app.use('/images', express.static(path.join(__dirname, 'images')));
 
 // Parse requests of content-type - application/json
 app.use(bodyParser.json());
@@ -31,6 +48,7 @@ app.use((req, res, next) => {
 // Difine API routes.
 app.use(auth_route);
 app.use(user_route);
+app.use('/store', store_route);
 
 // Central error handling middleware.
 app.use((error, req, res, next) => {
@@ -51,9 +69,12 @@ app.get("/", (req, res) => {
 const User = require('./app/models/user');
 const Token = require('./app/models/token');
 const Address = require('./app/models/address');
+const Category = require('./app/models/category');
+const Sub_category = require('./app/models/sub_category');
 
 Token.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
 Address.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
+Sub_category.belongsTo(Category, { constraints: true, onDelete: 'CASCADE' });
 
 /*
  * Sync MySQL database.
