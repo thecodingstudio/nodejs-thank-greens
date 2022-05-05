@@ -28,7 +28,7 @@ exports.getCategory = async (req, res, next) => {
             }
         });
 
-        return res.staus(200).json({
+        return res.status(200).json({
             message: "Category, Sub_Category and it's all Item fetched successfully",
             data: category,
             status: 1
