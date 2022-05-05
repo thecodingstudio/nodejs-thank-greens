@@ -42,3 +42,52 @@ exports.getCategory = async (req, res, next) => {
     }
 
 }
+
+
+// exports.postFav = async (req, res, next) => {
+//     const userId = req.user.id;
+//     const catererId = req.body.catererId;
+
+//     try {
+//         const fav = await Favourites.create({ userId: userId, catererId: catererId })
+//         return res.status(200).json({ message: "Added to Favourites!", result: fav, status: 1 })
+//     } catch (err) {
+//         console.log(err);
+//         return res.status(500).json({ error: err || 'Something went wrong!', status: 0 });
+//     }
+// }
+
+// exports.getFav = async (req, res, next) => {
+//     const userId = req.user.id;
+
+//     try {
+
+//         const favs = await Favourites.findAll({ where: { userId: userId } });
+//         if (favs.length === 0) {
+//             return res.status(400).json({ message: "No Favourites Found!", status: 1 })
+//         }
+//         let caterers = [];
+//         for (let i = 0; i < favs.length; i++) {
+//             const cat = await User.findByPk(favs[i].catererId);
+//             caterers.push(cat);
+//         }
+//         return res.status(200).json({ message: "Favourites Caterers Found!", result: caterers, status: 1 })
+
+//     } catch (err) {
+//         console.log(err);
+//         return res.status(500).json({ error: err || 'Something went wrong!', status: 0 });
+//     }
+// }
+
+// exports.deleteFav = async (req, res, next) => {
+//     const userId = req.user.id;
+//     const catererId = req.body.id;
+//     try {
+
+//         await Favourites.destroy({ where: { catererId: catererId, userId: userId } })
+//         return res.status(200).json({ message: "Removed from favourites!", status: 1 })
+//     } catch (err) {
+//         console.log(err);
+//         return res.status(500).json({ error: err || 'Something went wrong!', status: 0 });
+//     }
+// }
