@@ -76,6 +76,10 @@ const Sub_category = require('./app/models/sub_category');
 const Item = require('./app/models/item');
 const Item_image = require('./app/models/item_image');
 const Item_size = require('./app/models/item_size');
+const Favourites = require('./app/models/favourite');
+const Banner = require('./app/models/banner');
+const Order = require('./app/models/order');
+const Order_item = require('./app/models/order_item');
 
 Token.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
 Address.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
@@ -87,12 +91,20 @@ Item.belongsTo(Category, { constraints: true, onDelete: 'CASCADE' });
 Category.hasMany(Item);
 Item.hasMany(Item_image, { constraints: true, onDelete: 'CASCADE' });
 Item.hasMany(Item_size, { constraints: true, onDelete: 'CASCADE' });
+User.hasMany(Favourites, { constraints: true, onDelete: 'CASCADE' });
+Item.hasMany(Favourites, { constraints: true, onDelete: 'CASCADE' });
+Order.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
+Order_item.belongsTo(Order, { constraints: true, onDelete: 'CASCADE' });
+// Order.hasMany(Order_item);
+Order_item.belongsTo(Item);
+Order_item.belongsTo(Sub_category);
 
 /*
  * Sync MySQL database.
  * Live to on defined port.
  */
 const sequelize = require("./app/utils/database");
+const { request } = require('http');
 sequelize
     .sync({ force: false })
     .then(_database => {

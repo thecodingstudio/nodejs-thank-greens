@@ -8,5 +8,16 @@ router.use(cors());
 
 router.get('/get-category', customerController.getCategory);
 
+router.post('/add-to-favourites', is_auth, customerController.postFav);
+
+router.get('/get-favourites', is_auth, customerController.getFav);
+
+router.delete('/delete-favourites', is_auth, customerController.deleteFav);
+
+router.get('/get-banner', customerController.getBanner);
+
+router.post('/palce-order', customerController.postOrder);
+
+router.get('/get-order', customerController.getOrder);
 
 module.exports = router;

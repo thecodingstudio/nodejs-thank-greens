@@ -13,6 +13,10 @@ const Item = sequelize.define('item' , {
     order_count: {
         type: Sequelize.INTEGER(11)
     },
+    is_favourite: {
+        type: Sequelize.TINYINT(1),
+        defaultValue: 0
+    },
     is_test: {
         type: Sequelize.TINYINT(1),
         defaultValue: 1

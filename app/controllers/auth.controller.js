@@ -35,7 +35,7 @@ exports.Register = (req, res, next) => {
           email: req.body.email,
           password: req.body.password,
           name: req.body.name,
-          picture: "http://example.org/jdoe.png"
+          picture: "https://res.cloudinary.com/dobanpo5b/image/upload/v1651725116/sample.jpg"
         }
       }
 
@@ -114,31 +114,30 @@ exports.Login = async (req, res, next) => {
   const password = req.body.password;
 
   const user = await User.findOne({ where: { email: email } });
-
-  // Check whether user is already exist or not.
-  if (!user) {
-    const error = new Error('User not exists!');
-    error.statusCode = 404;
-    throw error;
-  }
-
-  var options = {
-    method: 'POST',
-    url: 'https://thank-greens.us.auth0.com/oauth/token',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    form: {
-      grant_type: 'password',
-      username: email,
-      password: password,
-      audience: process.env.AUDIENCE,
-      scope: 'offline_access',
-      client_id: process.env.CLIENT_ID,
-      client_secret: process.env.CLIENT_SECRET
-    }
-  };
-
-  // Make login request to third party Auth0 api.
   try {
+    // Check whether user is already exist or not.
+    if (!user) {
+      const error = new Error('User not exists!');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    var options = {
+      method: 'POST',
+      url: 'https://thank-greens.us.auth0.com/oauth/token',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      form: {
+        grant_type: 'password',
+        username: email,
+        password: password,
+        audience: process.env.AUDIENCE,
+        scope: 'offline_access',
+        client_id: process.env.CLIENT_ID,
+        client_secret: process.env.CLIENT_SECRET
+      }
+    };
+
+    // Make login request to third party Auth0 api.
 
     request(options, async (error, response, body) => {
       if (error) {
@@ -188,7 +187,7 @@ exports.Login = async (req, res, next) => {
                 email: user.email,
                 country_code: user.country_code,
                 phone: user.phone,
-                picture: user.picture
+                picture: user.picture,
               },
               status: 1
             });
@@ -238,16 +237,17 @@ exports.Login = async (req, res, next) => {
       }
       catch (err) {
         console.log(err)
-        return res.json({ ErrorMessage: "Database error!" })
+        return res.json({ ErrorMessage: "Database error!", status: 0 });
       }
 
     });
   }
   catch (err) {
     console.log(err)
-    const error = new Error('Login failed!');
-    error.statusCode = 422;
-    throw error;
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
   }
 }
 
@@ -274,17 +274,12 @@ exports.refreshToken = (req, res, next) => {
     request(options, function (error, response, body) {
       if (error) {
         console.log(error);
-        return res.json(500).json({
-          ErrorMessage: 'Some Auth0 error while making refresh_token request!',
-          status: 0
-        })
+        return res.status(500).json({ ErrorMessage: 'Some Auth0 error while making refresh_token request!', status: 0 });
       }
 
       // Check whether any logical error is occurd or not.
       json_body = JSON.parse(body);
-      if (json_body.statusCode === 400) {
-        return next(json_body);
-      }
+      if (json_body.error_description) { return next(json_body); }
 
       // Send success responce.
       return res.status(200).json({
@@ -300,9 +295,7 @@ exports.refreshToken = (req, res, next) => {
   }
   catch (err) {
     console.log(err)
-    const error = new Error('Getting refresh token failed!');
-    error.statusCode = 422;
-    throw error;
+    return res.status(500).json({ ErrorMessage: 'Getting refresh token failed!', status: 0 });
   }
 }
 
