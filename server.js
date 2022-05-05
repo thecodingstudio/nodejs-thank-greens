@@ -14,6 +14,7 @@ const PORT = process.env.PORT || 8000;
 const auth_route = require('./app/routes/auth.routes');
 const user_route = require('./app/routes/user.routes');
 const store_route = require('./app/routes/store.routes');
+const customer_route = require('./app/routes/customer.routes');
 
 // Multer setup.
 const storage = multer.diskStorage({
@@ -49,6 +50,7 @@ app.use((req, res, next) => {
 app.use(auth_route);
 app.use(user_route);
 app.use('/store', store_route);
+app.use('/customer', customer_route);
 
 // Central error handling middleware.
 app.use((error, req, res, next) => {
@@ -71,10 +73,20 @@ const Token = require('./app/models/token');
 const Address = require('./app/models/address');
 const Category = require('./app/models/category');
 const Sub_category = require('./app/models/sub_category');
+const Item = require('./app/models/item');
+const Item_image = require('./app/models/item_image');
+const Item_size = require('./app/models/item_size');
 
 Token.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
 Address.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
 Sub_category.belongsTo(Category, { constraints: true, onDelete: 'CASCADE' });
+Category.hasMany(Sub_category);
+Item.belongsTo(Sub_category, { constraints: true, onDelete: 'CASCADE' });
+Sub_category.hasMany(Item);
+Item.belongsTo(Category, { constraints: true, onDelete: 'CASCADE' });
+Category.hasMany(Item);
+Item.hasMany(Item_image, { constraints: true, onDelete: 'CASCADE' });
+Item.hasMany(Item_size, { constraints: true, onDelete: 'CASCADE' });
 
 /*
  * Sync MySQL database.
