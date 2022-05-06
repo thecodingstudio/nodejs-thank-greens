@@ -80,6 +80,8 @@ const Favourites = require('./app/models/favourite');
 const Banner = require('./app/models/banner');
 const Order = require('./app/models/order');
 const Order_item = require('./app/models/order_item');
+const Card = require('./app/models/card');
+const Payment = require('./app/models/payment');
 
 Token.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
 Address.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
@@ -94,10 +96,17 @@ Item.hasMany(Item_size, { constraints: true, onDelete: 'CASCADE' });
 User.hasMany(Favourites, { constraints: true, onDelete: 'CASCADE' });
 Item.hasMany(Favourites, { constraints: true, onDelete: 'CASCADE' });
 Order.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
+Order.hasMany(Order_item);
 Order_item.belongsTo(Order, { constraints: true, onDelete: 'CASCADE' });
-// Order.hasMany(Order_item);
-Order_item.belongsTo(Item);
 Order_item.belongsTo(Sub_category);
+Sub_category.hasOne(Order_item);
+Order_item.belongsTo(Item);
+Item.hasOne(Order_item);
+Order_item.belongsTo(Item_size);
+Item_size.hasOne(Order_item);
+Card.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
+Payment.belongsTo(User);
+Payment.belongsTo(Order);
 
 /*
  * Sync MySQL database.

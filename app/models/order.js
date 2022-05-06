@@ -19,16 +19,27 @@ const Order = sequelize.define('order', {
         allowNull: false
     },
     delivery_charge: {
-        type: Sequelize.DECIMAL(5, 2),
-        allowNull: false
+        type: Sequelize.DECIMAL(5, 2)
     },
     total_amount: {
-        type: Sequelize.DECIMAL(5, 2),
+        type: Sequelize.FLOAT,
         allowNull: false
     },
     status: {
         type: Sequelize.ENUM('Ordered', 'Packed', 'Shipped', 'Delivered', 'Cancelled'),
         defaultValue: 'Ordered'
+    },
+    rate : {
+        type: Sequelize.TINYINT(1),
+        defaultValue: null
+    },
+    rate_description : {
+        type: Sequelize.TEXT,
+        defaultValue: null
+    },
+    cancellation_reason :{
+        type: Sequelize.TEXT,
+        defaultValue: null
     },
     is_test: {
         type: Sequelize.TINYINT(1),

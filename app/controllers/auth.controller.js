@@ -2,6 +2,7 @@ require('dotenv').config();
 const request = require('request');
 const bcrypt = require('bcryptjs')
 const client = require('twilio')(process.env.ACCOUNT_SID, process.env.AUTH_TOKEN);
+const stripe = require('stripe')(process.env.STRIPE_SK);
 let json_body;
 
 // Import models.
@@ -61,7 +62,16 @@ exports.Register = (req, res, next) => {
           // Save additional info of user in database.
           try {
 
+            // Create stripe customer account for pharmacist.
+
+            const customer = await stripe.customers.create({
+              name: req.body.name,
+              email: req.body.email,
+              phone: req.body.phone
+            });
+
             const user = await User.findByPk(json_body.id);
+            user.stripe_id = customer.id
             user.country_code = req.body.country_code;
             user.phone = req.body.phone;
             await user.save();
@@ -79,7 +89,7 @@ exports.Register = (req, res, next) => {
 
           }
           catch (err) {
-            console.log(err)
+            console.log(err);
             return res.json(500).json({
               ErrorMessage: 'Some database error while creating user!',
               status: 0

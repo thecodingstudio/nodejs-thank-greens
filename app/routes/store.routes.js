@@ -12,4 +12,6 @@ router.post('/add-sub_category', storeController.postSubCategory);
 
 router.post('/add-item', storeController.postItem);
 
+router.post('/change-status', storeController.changeStatus);
+
 module.exports = router;

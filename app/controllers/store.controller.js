@@ -3,6 +3,8 @@ const Sub_category = require('../models/sub_category');
 const Item = require('../models/item');
 const Item_image = require('../models/item_image');
 const Item_size = require('../models/item_size');
+const Order = require('../models/order');
+const Order_item = require('../models/order_item');
 
 
 const cloudinary = require('../utils/upload');
@@ -124,7 +126,7 @@ exports.postItem = (req, res, next) => {
                     });
 
                     try {
-                        
+
                         await Item_image.create({
                             image: image.url,
                             itemId: new_item.id
@@ -166,4 +168,39 @@ exports.postItem = (req, res, next) => {
         next(err);
     })
 
+}
+
+exports.changeStatus = async (req, res, next) => {
+    try {
+        const order = await Order.findOne({
+            where: { id: req.body.orderId },
+            attributes: ["id", "status", "cancellation_reason"],
+            include: {
+                model: Order_item,
+                attributes: ["id", "quantity", "itemId"],
+            }
+        });
+
+        if(!order){
+            return res.status(404).json({ ErrorMessage: 'Order not found!', status: 0 });
+        }
+
+        order.status = req.body.status;
+        await order.save();
+
+        if (order.status === 'Delivered') {
+            for (let i = 0; i < order.order_items.length; i++) {
+                const item = await Item.findByPk(order.order_items[i].itemId);
+                item.order_count += order.order_items[i].quantity;
+                await item.save();
+            }
+        }
+
+
+
+        return res.status(200).json({ message: 'Status changed successfully', order_status: order.status, status: 1 });
+    } catch (error) {
+        console.log(error);
+        return res.status(400).json({ ErrorMessage: error.name||'Failed to change status', status: 0 });
+    }
 }

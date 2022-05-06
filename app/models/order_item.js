@@ -2,14 +2,6 @@ const Sequelize = require('sequelize');
 const sequelize = require('../utils/database');
 
 const Order_item = sequelize.define('order_item', {
-    name: {
-        type: Sequelize.STRING,
-        allowNull: false
-    },
-    size: {
-        type: Sequelize.STRING,
-        allowNull: false
-    },
     quantity: {
         type: Sequelize.INTEGER(5),
         allowNull: false
