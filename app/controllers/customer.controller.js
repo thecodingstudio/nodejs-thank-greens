@@ -8,6 +8,7 @@ const Favourites = require('../models/favourite');
 const Banner = require('../models/banner');
 const Order = require('../models/order');
 const Order_item = require('../models/order_item');
+const Coupon = require('../models/coupon');
 
 const { Op, or } = require("sequelize");
 
@@ -275,4 +276,16 @@ exports.getRec = (req, res, next) => {
         console.log(err);
         return res.status(400).json({ ErrorMessage: err || 'Something went worong!', status: 0 })
     })
+}
+
+exports.getCoupons = async (req, res, next) => {
+
+    try {
+        const coupons = await Coupon.findAll({ attributes: ['id', 'code', 'title', 'expiry', 'is_percentage', 'value'] });
+
+        return res.status(200).json({ message: 'Fetch coupons successfully', coupons: coupons, status: 1 });
+    } catch (error) {
+        console.log(error);
+        return res.status(400).json({ ErrorMessage: error.name || 'Failed to fetch coupon', status: 0 });
+    }
 }
