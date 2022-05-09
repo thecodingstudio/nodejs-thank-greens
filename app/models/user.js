@@ -1,7 +1,7 @@
 const Sequelize = require('sequelize');
 const sequelize = require('../utils/database');
 
-const User = sequelize.define('user' , {
+const User = sequelize.define('user', {
     name: {
         type: Sequelize.STRING
     },
@@ -23,8 +23,13 @@ const User = sequelize.define('user' , {
     phone: {
         type: Sequelize.STRING
     },
-    stripe_id : {
-        type : Sequelize.TEXT
+    stripe_id: {
+        type: Sequelize.TEXT
+    },
+    reffer_code: {
+        type: Sequelize.UUID,
+        allowNull: true,
+        unique: true
     },
     is_test: {
         type: Sequelize.TINYINT(1),
