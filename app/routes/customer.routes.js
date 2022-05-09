@@ -33,4 +33,6 @@ router.get('/get-card', is_auth, paymentController.getCard);
 
 router.post('/checkout', is_auth, paymentController.checkout);
 
+router.get('/get-coupons', is_auth, customerController.getCoupons);
+
 module.exports = router;
