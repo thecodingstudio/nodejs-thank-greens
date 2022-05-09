@@ -1,5 +1,6 @@
 const User = require('../models/user');
 const Address = require('../models/address');
+const Coupon = require('../models/coupon');
 
 /*
  * Get profile for every user.
@@ -189,7 +190,8 @@ exports.deleteAddress = (req, res, next) => {
                 await address.destroy();
 
                 return res.status(200).json({
-                    message: 'Address deleted successfully!'
+                    message: 'Address deleted successfully!',
+                    status: 1
                 });
             }
             catch (err) {
@@ -240,3 +242,5 @@ exports.getAddress = (req, res, next) => {
         });
 
 }
+
+
