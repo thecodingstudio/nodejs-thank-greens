@@ -3,6 +3,7 @@ const request = require('request');
 const bcrypt = require('bcryptjs')
 const client = require('twilio')(process.env.ACCOUNT_SID, process.env.AUTH_TOKEN);
 const stripe = require('stripe')(process.env.STRIPE_SK);
+const { v4: uuidv4 } = require('uuid');
 let json_body;
 
 // Import models.
@@ -36,7 +37,7 @@ exports.Register = (req, res, next) => {
           email: req.body.email,
           password: req.body.password,
           name: req.body.name,
-          picture: "https://res.cloudinary.com/dobanpo5b/image/upload/v1651725116/sample.jpg"
+          picture: "https://res.cloudinary.com/dobanpo5b/image/upload/v1652076493/user_zrlnnh.jpg"
         }
       }
 
@@ -63,7 +64,6 @@ exports.Register = (req, res, next) => {
           try {
 
             // Create stripe customer account for pharmacist.
-
             const customer = await stripe.customers.create({
               name: req.body.name,
               email: req.body.email,
@@ -71,7 +71,8 @@ exports.Register = (req, res, next) => {
             });
 
             const user = await User.findByPk(json_body.id);
-            user.stripe_id = customer.id
+            user.reffer_code = uuidv4().split('-')[0].toUpperCase();
+            user.stripe_id = customer.id;
             user.country_code = req.body.country_code;
             user.phone = req.body.phone;
             await user.save();
@@ -198,6 +199,7 @@ exports.Login = async (req, res, next) => {
                 country_code: user.country_code,
                 phone: user.phone,
                 picture: user.picture,
+                reffer_code: user.reffer_code
               },
               status: 1
             });
@@ -239,7 +241,8 @@ exports.Login = async (req, res, next) => {
             email: user.email,
             country_code: user.country_code,
             phone: user.phone,
-            picture: user.picture
+            picture: user.picture,
+            reffer_code: user.reffer_code
           },
           status: 1
         });
