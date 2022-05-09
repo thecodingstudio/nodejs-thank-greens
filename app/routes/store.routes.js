@@ -14,4 +14,6 @@ router.post('/add-item', storeController.postItem);
 
 router.post('/change-status', storeController.changeStatus);
 
+router.post('/add-coupon', storeController.postCoupon);
+
 module.exports = router;
