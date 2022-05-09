@@ -5,7 +5,7 @@ const Item_image = require('../models/item_image');
 const Item_size = require('../models/item_size');
 const Order = require('../models/order');
 const Order_item = require('../models/order_item');
-
+const Coupon = require('../models/coupon');
 
 const cloudinary = require('../utils/upload');
 
@@ -181,7 +181,7 @@ exports.changeStatus = async (req, res, next) => {
             }
         });
 
-        if(!order){
+        if (!order) {
             return res.status(404).json({ ErrorMessage: 'Order not found!', status: 0 });
         }
 
@@ -196,11 +196,28 @@ exports.changeStatus = async (req, res, next) => {
             }
         }
 
-
-
         return res.status(200).json({ message: 'Status changed successfully', order_status: order.status, status: 1 });
     } catch (error) {
         console.log(error);
-        return res.status(400).json({ ErrorMessage: error.name||'Failed to change status', status: 0 });
+        return res.status(400).json({ ErrorMessage: error.name || 'Failed to change status', status: 0 });
+    }
+}
+
+exports.postCoupon = async(req, res, next) => {
+    try {
+
+        const payload = {
+            title :req.body.title,
+            expiry : req.body.expiry,
+            value : req.body.value,
+            is_percentage : req.body.is_percentage
+        }
+
+        const coupon = await Coupon.create(payload)
+
+        return res.status(200).json({ message: 'Coupon added', coupon: coupon, status: 1 });
+    } catch (error) {
+        console.log(error);
+        return res.status(400).json({ ErrorMessage: error.name || 'Failed to add coupon', status: 0 });
     }
 }
