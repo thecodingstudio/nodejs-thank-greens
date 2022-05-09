@@ -13,6 +13,12 @@ router.get('/get-banner', customerController.getBanner);
 
 router.get('/get-rec', customerController.getRec);
 
+router.post('/filter', customerController.Filter);
+
+router.get('/sort', customerController.Sort);
+
+router.get('/search', customerController.Search);
+
 router.post('/add-to-favourites', is_auth, customerController.postFav);
 
 router.get('/get-favourites', is_auth, customerController.getFav);

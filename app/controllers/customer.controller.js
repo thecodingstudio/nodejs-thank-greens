@@ -43,7 +43,7 @@ exports.getCategory = async (req, res, next) => {
     }
     catch (err) {
         console.log(err);
-        const error = new Error('Failed to fetch details, Please meet your backend devloper!');
+        const error = new Error('Failed to fetch details!');
         error.statusCode = 400;
         throw (error);
     }
@@ -287,5 +287,146 @@ exports.getCoupons = async (req, res, next) => {
     } catch (error) {
         console.log(error);
         return res.status(400).json({ ErrorMessage: error.name || 'Failed to fetch coupon', status: 0 });
+    }
+}
+
+exports.Filter = async (req, res, next) => {
+    try {
+        const category = await Category.findAll();
+
+        const title = req.body.title || category.map(element => element.title);
+
+        const filter = await Category.findAll({
+            where: { title: title },
+            attributes: ['id', 'title', 'image'],
+            include: {
+                model: Sub_category,
+                attributes: ['id', 'title', 'image', 'categoryId'],
+                include: {
+                    model: Item,
+                    attributes: ['id', 'name', 'discreption', 'subCategoryId'],
+                    include: [{
+                        model: Item_image,
+                        attributes: ['id', 'image', 'itemId']
+                    }, {
+                        model: Item_size,
+                        where: { price: { [Op.between]: [req.body.start_price || 0, req.body.end_price || 1000000] } },
+                        attributes: ['id', 'size', 'price', 'itemId']
+                    }]
+                }
+            }
+        });
+
+        return res.status(200).json({ message: "Filter applied successfully!", data: filter, status: 1 });
+
+    }
+    catch (error) {
+        console.log(error);
+        return res.status(400).json({ ErrorMessage: error.name || 'Failed to filter!', status: 0 });
+    }
+}
+
+exports.Sort = async (req, res, next) => {
+    try {
+        let response = [];
+        const item_size = await Item_size.findAll({
+            order: [['price', req.query.price || 'ASC']],
+            attributes: ['id', 'size', 'price', 'itemId']
+        });
+
+        const item_id = item_size.map(element => element.itemId);
+        const sort = [...new Set(item_id)];
+        console.log(sort);
+        for (i = 0; i < sort.length; i++) {
+            const item = await Item.findOne({
+                where: { id: sort[i] },
+                attributes: ['id', 'name', 'discreption', 'subCategoryId'],
+                include: [{
+                    model: Item_image,
+                    attributes: ['id', 'image', 'itemId']
+                }, {
+                    model: Item_size,
+                    attributes: ['id', 'size', 'price', 'itemId']
+                }]
+            });
+            response.push(item);
+        }
+
+        return res.status(200).json({ message: "Filter applied successfully!", data: response, status: 1 });
+
+    } catch (error) {
+        console.log(error);
+        if (error.original.errno === 1054) {
+            return res.status(400).json({ ErrorMessage: "price value must be either 'ASC' or 'DESC' in query perameter", status: 0 });
+        }
+        return res.status(400).json({ ErrorMessage: 'Failed to sort!', status: 0 });
+    }
+}
+
+exports.Search = async (req, res, next) => {
+    const term = req.query.term;
+    if (term.length < 4) {
+        return res.status(400).json({ ErrorMessage: 'Term length must be more than 3 letters', status: 0 });
+    }
+    try {
+        const category = await Category.findAll({
+            where: { title: { [Op.like]: '%' + term + '%' } },
+            attributes: ['id', 'title', 'image'],
+            include: {
+                model: Sub_category,
+                attributes: ['id', 'title', 'image', 'categoryId'],
+                include: {
+                    model: Item,
+                    attributes: ['id', 'name', 'discreption', 'subCategoryId'],
+                    include: [{
+                        model: Item_image,
+                        attributes: ['id', 'image', 'itemId']
+                    }, {
+                        model: Item_size,
+                        attributes: ['id', 'size', 'price', 'itemId']
+                    }]
+                }
+            }
+        });
+
+        const sub_category = await Sub_category.findAll({
+            where: { title: { [Op.like]: '%' + term + '%' } },
+            attributes: ['id', 'title', 'image', 'categoryId'],
+            include: {
+                model: Item,
+                attributes: ['id', 'name', 'discreption', 'subCategoryId'],
+                include: [{
+                    model: Item_image,
+                    attributes: ['id', 'image', 'itemId']
+                }, {
+                    model: Item_size,
+                    attributes: ['id', 'size', 'price', 'itemId']
+                }]
+            }
+        });
+
+        const item = await Item.findAll({
+            where: { name: { [Op.like]: '%' + term + '%' } },
+            attributes: ['id', 'name', 'discreption', 'subCategoryId'],
+            include: [{
+                model: Item_image,
+                attributes: ['id', 'image', 'itemId']
+            }, {
+                model: Item_size,
+                attributes: ['id', 'size', 'price', 'itemId']
+            }]
+        });
+
+        const total = category.length + sub_category.length + item.length;
+
+        if (total === 0) {
+            return res.status(404).json({ message: 'Data not found!', status: 1 });
+        }
+        return res.json({ message: 'Searched successfully', items: item, categories: category, sub_categories: sub_category, total: total, status: 1 });
+
+    }
+    catch (error) {
+        console.log(error);
+        return res.status(400).json({ ErrorMessage: 'Failed to search!', status: 0 });
     }
 }

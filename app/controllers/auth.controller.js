@@ -77,7 +77,7 @@ exports.Register = (req, res, next) => {
             user.phone = req.body.phone;
             await user.save();
 
-            // Send success responce.
+            // Send success response.
             return res.status(200).json({
               message: "User created successfully",
               data: {
@@ -227,7 +227,7 @@ exports.Login = async (req, res, next) => {
         // Create new token data.
         const new_token = await Token.create(payload);
 
-        // Send success responce.
+        // Send success response.
         return res.status(200).json({
           message: "Login successfully.",
           access_token: json_body.access_token,
@@ -294,7 +294,7 @@ exports.refreshToken = (req, res, next) => {
       json_body = JSON.parse(body);
       if (json_body.error_description) { return next(json_body); }
 
-      // Send success responce.
+      // Send success response.
       return res.status(200).json({
         message: "Get access token successfully.",
         access_token: json_body.access_token,
