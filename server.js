@@ -83,7 +83,7 @@ const Order_item = require('./app/models/order_item');
 const Card = require('./app/models/card');
 const Payment = require('./app/models/payment');
 
-Token.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
+Token.belongsTo(User);
 Address.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
 Sub_category.belongsTo(Category, { constraints: true, onDelete: 'CASCADE' });
 Category.hasMany(Sub_category);
