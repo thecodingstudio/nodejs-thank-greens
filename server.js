@@ -57,7 +57,7 @@ app.use((error, req, res, next) => {
     console.log(error);
     const statusCode = error.statusCode || 500;
     const data = error.data;
-    const ErrorMessage = error.message || error.error;
+    const ErrorMessage = error.message || error.error || 'Something went wrong';
     const ErrorDesc = error.description || error.error_description;
     res.status(statusCode).json({ ErrorMessage: ErrorMessage, ErrorDescription: ErrorDesc, data: data, status: 0 });
 });

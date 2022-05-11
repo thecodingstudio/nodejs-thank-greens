@@ -1,4 +1,5 @@
 const User = require('../models/user');
+const Address = require('../models/address');
 const Category = require('../models/category');
 const Sub_category = require('../models/sub_category');
 const Item = require('../models/item');
@@ -11,10 +12,23 @@ const Order_item = require('../models/order_item');
 const Coupon = require('../models/coupon');
 
 const { Op, or } = require("sequelize");
+const jwt = require('jsonwebtoken');
+const fs = require('fs');
+var cert = fs.readFileSync('thank-greens.pem');
 
 exports.getCategory = async (req, res, next) => {
-
     try {
+        const authenticated = req.get('Authorization') || ' | ';
+        const token = authenticated.split(' ')[1];
+        jwt.verify(token, cert, (err, user) => {
+            if (!err) {
+                req.user_id = user.sub.split('|')[1];
+            }
+        });
+
+        const id = req.user_id || null;
+
+        const address = await Address.findOne({ where: { userId: id, is_select: 1 }, attributes: ['id', 'primary_address', 'addition_address_info', 'address_type', 'latitude', 'longitude', 'userId'] });
 
         const category = await Category.findAll({
             attributes: ['id', 'title', 'image'],
@@ -35,17 +49,57 @@ exports.getCategory = async (req, res, next) => {
             }
         });
 
+        const banner = await Banner.findAll({ attributes: ['image'] });
+
+
+        const past_orders = await Order.findAll({
+            where: { userId: id, status: { [Op.or]: ['Delivered', 'Cancelled'] } },
+            attributes: ["id", "delivery_date", "delivery_time", "payment_method", "sub_total", "delivery_charge", "total_amount", "status", "cancellation_reason"],
+            include: {
+                model: Order_item,
+                attributes: ["id", "quantity"],
+                include: [{
+                    model: Sub_category,
+                    attributes: ["title", "image"]
+                }, {
+                    model: Item,
+                    attributes: ["name"]
+                }, {
+                    model: Item_size,
+                    attributes: ["size", "price"]
+                }]
+            }
+        });
+
+        const recommended_products = await Item.findAll({
+            limit: 20,
+            attributes: ["id", "name", "order_count"],
+            order: [['order_count', 'DESC']],
+            include: [{
+                model: Item_image,
+                attributes: ["id", "image"]
+            }, {
+                model: Item_size,
+                attributes: ["id", "size", "price"]
+            }]
+        })
+
         return res.status(200).json({
-            message: "Category, Sub_Category and it's all Item fetched successfully",
-            data: category,
+            message: "HomePage fetched successfully",
+            address: address,
+            banners: banner,
+            categories: category,
+            past_orders: past_orders,
+            recommended_products: recommended_products,
             status: 1
         });
     }
     catch (err) {
         console.log(err);
-        const error = new Error('Failed to fetch details!');
-        error.statusCode = 400;
-        throw (error);
+        if (!err.statusCode) {
+            err.statusCode = 500;
+        }
+        next(err);
     }
 
 }
