@@ -48,7 +48,7 @@ exports.getCategory = async (req, res, next) => {
                 }
             }
         });
-
+        
         const banner = await Banner.findAll({ attributes: ['image'] });
 
 

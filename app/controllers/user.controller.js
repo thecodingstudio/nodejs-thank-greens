@@ -94,8 +94,16 @@ exports.postAddress = async (req, res, next) => {
         address_type: req.body.address_type || 0,
         latitude: req.body.latitude || 21.228125,
         longitude: req.body.longitude || 72.833771,
-        is_select: req.body.is_select,
+        is_select: req.body.is_select || 0,
         userId: req.user_id
+    }
+
+    if (payload.is_select === 1) {
+        const address = await Address.findAll({ where: { userId: req.user_id } });
+        for (let i = 0; i < address.length; i++) {
+            address[i].is_select = 0;
+            await address[i].save();
+        }
     }
 
     // Create new address in database.
@@ -143,6 +151,14 @@ exports.updateAddress = (req, res, next) => {
                 address.latitude = req.body.latitude || address.latitude;
                 address.longitude = req.body.longitude || address.longitude;
                 address.is_select = req.body.is_select || address.is_select;
+
+                if (req.body.is_select === 1) {
+                    const address = await Address.findAll({ where: { userId: req.user_id } });
+                    for (let i = 0; i < address.length; i++) {
+                        address[i].is_select = 0;
+                        await address[i].save();
+                    }
+                }
 
                 // save updated address.
                 await address.save();
