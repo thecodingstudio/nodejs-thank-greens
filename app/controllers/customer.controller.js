@@ -16,7 +16,7 @@ const jwt = require('jsonwebtoken');
 const fs = require('fs');
 var cert = fs.readFileSync('thank-greens.pem');
 
-exports.getCategory = async (req, res, next) => {
+exports.getHomepage = async (req, res, next) => {
     try {
         const authenticated = req.get('Authorization') || ' | ';
         const token = authenticated.split(' ')[1];

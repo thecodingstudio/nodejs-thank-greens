@@ -7,11 +7,11 @@ const paymentController = require('../controllers/payment.controller');
 
 router.use(cors());
 
-router.get('/get-homepage', customerController.getCategory);
+router.get('/get-homepage', customerController.getHomepage);
 
-router.get('/get-banner', customerController.getBanner);
+// router.get('/get-banner', customerController.getBanner);
 
-router.get('/get-rec', customerController.getRec);
+// router.get('/get-rec', customerController.getRec);
 
 router.post('/filter', customerController.Filter);
 

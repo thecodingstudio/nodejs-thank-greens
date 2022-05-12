@@ -99,11 +99,13 @@ exports.postAddress = async (req, res, next) => {
     }
 
     if (payload.is_select === 1) {
-        const address = await Address.findAll({ where: { userId: req.user_id } });
-        for (let i = 0; i < address.length; i++) {
-            address[i].is_select = 0;
-            await address[i].save();
+        const address = await Address.findOne({ where: { userId: req.user_id, is_select: 1 } });
+        // for (let i = 0; i < address.length; i++) {
+        if (address) {
+            address.is_select = 0;
+            await address.save();
         }
+        // }
     }
 
     // Create new address in database.
@@ -153,11 +155,13 @@ exports.updateAddress = (req, res, next) => {
                 address.is_select = req.body.is_select || address.is_select;
 
                 if (req.body.is_select === 1) {
-                    const address = await Address.findAll({ where: { userId: req.user_id } });
-                    for (let i = 0; i < address.length; i++) {
-                        address[i].is_select = 0;
-                        await address[i].save();
+                    const address = await Address.findOne({ where: { userId: req.user_id, is_select: 1 } });
+                    // for (let i = 0; i < address.length; i++) {
+                    if (address) {
+                        address.is_select = 0;
+                        await address.save();
                     }
+                    // }
                 }
 
                 // save updated address.
