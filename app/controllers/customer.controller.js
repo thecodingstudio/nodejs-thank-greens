@@ -63,7 +63,11 @@ exports.getHomepage = async (req, res, next) => {
                     attributes: ["title", "image"]
                 }, {
                     model: Item,
-                    attributes: ["name"]
+                    attributes: ["name"],
+                    include: {
+                        model: Item_image,
+                        attributes: ["id", "image"]
+                    }
                 }, {
                     model: Item_size,
                     attributes: ["size", "price"]
@@ -238,13 +242,13 @@ exports.getOrder = async (req, res, next) => {
                     }, {
                         model: Item,
                         attributes: ["id", "name"],
-                        include: [{
-                            model: Item_size,
-                            attributes: ["id", "size", "price"]
-                        }, {
+                        include: {
                             model: Item_image,
                             attributes: ["id", "image"]
-                        }]
+                        }
+                    }, {
+                        model: Item_size,
+                        attributes: ["id", "size", "price"]
                     }]
                 }
             });
