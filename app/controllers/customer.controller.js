@@ -48,7 +48,7 @@ exports.getHomepage = async (req, res, next) => {
                 }
             }
         });
-        
+
         const banner = await Banner.findAll({ attributes: ['image'] });
 
 
@@ -234,13 +234,17 @@ exports.getOrder = async (req, res, next) => {
                     attributes: ["id", "quantity"],
                     include: [{
                         model: Sub_category,
-                        attributes: ["title", "image"]
+                        attributes: ["id", "title", "image"]
                     }, {
                         model: Item,
-                        attributes: ["name"]
-                    }, {
-                        model: Item_size,
-                        attributes: ["size", "price"]
+                        attributes: ["id", "name"],
+                        include: [{
+                            model: Item_size,
+                            attributes: ["id", "size", "price"]
+                        }, {
+                            model: Item_image,
+                            attributes: ["id", "image"]
+                        }]
                     }]
                 }
             });
