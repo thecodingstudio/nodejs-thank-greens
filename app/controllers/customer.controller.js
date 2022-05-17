@@ -426,12 +426,9 @@ exports.Sort = async (req, res, next) => {
 }
 
 exports.Search = async (req, res, next) => {
-    try {
-        const term = req.query.term;
-    if(term){
-        if (term.length < 4) {
-            return res.status(400).json({ ErrorMessage: 'Term length must be more than 3 letters', status: 0 });
-        }
+    const term = req.query.term;
+    if (term.length < 4) {
+        return res.status(400).json({ ErrorMessage: 'Term length must be more than 3 letters', status: 0 });
     }
     try {
         const category = await Category.findAll({
@@ -493,8 +490,5 @@ exports.Search = async (req, res, next) => {
     catch (error) {
         console.log(error);
         return res.status(400).json({ ErrorMessage: 'Failed to search!', status: 0 });
-    }
-    } catch (error) {
-        next(error);
     }
 }
