@@ -34,7 +34,7 @@ exports.Register = (req, res, next) => {
         form: {
           client_id: process.env.CLIENT_ID,
           connection: process.env.CONNECTION,
-          email: req.body.email,
+          email: req.body.email.toLowerCase(),
           password: req.body.password,
           name: req.body.name,
           picture: "https://res.cloudinary.com/dobanpo5b/image/upload/v1652076493/user_zrlnnh.jpg"
@@ -121,7 +121,7 @@ exports.Register = (req, res, next) => {
 */
 exports.Login = async (req, res, next) => {
 
-  const email = req.body.email;
+  const email = req.body.email.toLowerCase();
   const password = req.body.password;
 
   const user = await User.findOne({ where: { email: email } });
