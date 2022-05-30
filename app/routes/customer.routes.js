@@ -41,6 +41,6 @@ router.post('/checkout', is_auth, paymentController.checkout);
 
 router.get('/get-coupons', is_auth, customerController.getCoupons);
 
-router.post('/rate-order', customerController.rateOrder);
+router.post('/rate-order', is_auth, customerController.rateOrder);
 
 module.exports = router;
