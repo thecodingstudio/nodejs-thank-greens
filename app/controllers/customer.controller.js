@@ -54,7 +54,7 @@ exports.getHomepage = async (req, res, next) => {
 
         const past_orders = await Order.findAll({
             where: { userId: id, status: { [Op.or]: ['Delivered', 'Cancelled'] } },
-            attributes: ["id", "delivery_date", "delivery_time", "payment_method", "sub_total", "delivery_charge", "total_amount", "status", "cancellation_reason", "rate", "rate_descriprtion"],
+            attributes: ["id", "delivery_date", "delivery_time", "payment_method", "sub_total", "delivery_charge", "total_amount", "status", "cancellation_reason", "rate", "rate_description"],
             include: {
                 model: Order_item,
                 attributes: ["id", "quantity"],
@@ -232,7 +232,7 @@ exports.getOrder = async (req, res, next) => {
                 offset: (currentPage - 1) * perPage,
                 limit: perPage,
                 where: { userId: req.user_id, status: { [Op.or]: ['Delivered', 'Cancelled'] } },
-                attributes: ["id", "delivery_date", "delivery_time", "payment_method", "sub_total", "delivery_charge", "total_amount", "status", "cancellation_reason", "rate", "rate_descriprtion"],
+                attributes: ["id", "delivery_date", "delivery_time", "payment_method", "sub_total", "delivery_charge", "total_amount", "status", "cancellation_reason", "rate", "rate_description"],
                 include: {
                     model: Order_item,
                     attributes: ["id", "quantity"],
@@ -259,7 +259,7 @@ exports.getOrder = async (req, res, next) => {
                 offset: (currentPage - 1) * perPage,
                 limit: perPage,
                 where: { userId: req.user_id, status: { [Op.or]: ['Ordered', 'Packed', 'Shipped'] } },
-                attributes: ["id", "delivery_date", "delivery_time", "payment_method", "sub_total", "delivery_charge", "total_amount", "status", "rate", "rate_descriprtion"],
+                attributes: ["id", "delivery_date", "delivery_time", "payment_method", "sub_total", "delivery_charge", "total_amount", "status", "rate", "rate_description"],
                 include: {
                     model: Order_item,
                     attributes: ["id", "quantity"],
