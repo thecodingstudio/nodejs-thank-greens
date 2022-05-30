@@ -54,7 +54,7 @@ exports.getHomepage = async (req, res, next) => {
 
         const past_orders = await Order.findAll({
             where: { userId: id, status: { [Op.or]: ['Delivered', 'Cancelled'] } },
-            attributes: ["id", "delivery_date", "delivery_time", "payment_method", "sub_total", "delivery_charge", "total_amount", "status", "cancellation_reason"],
+            attributes: ["id", "delivery_date", "delivery_time", "payment_method", "sub_total", "delivery_charge", "total_amount", "status", "cancellation_reason", "rate", "rate_descriprtion"],
             include: {
                 model: Order_item,
                 attributes: ["id", "quantity"],
@@ -232,7 +232,7 @@ exports.getOrder = async (req, res, next) => {
                 offset: (currentPage - 1) * perPage,
                 limit: perPage,
                 where: { userId: req.user_id, status: { [Op.or]: ['Delivered', 'Cancelled'] } },
-                attributes: ["id", "delivery_date", "delivery_time", "payment_method", "sub_total", "delivery_charge", "total_amount", "status", "cancellation_reason"],
+                attributes: ["id", "delivery_date", "delivery_time", "payment_method", "sub_total", "delivery_charge", "total_amount", "status", "cancellation_reason", "rate", "rate_descriprtion"],
                 include: {
                     model: Order_item,
                     attributes: ["id", "quantity"],
@@ -259,7 +259,7 @@ exports.getOrder = async (req, res, next) => {
                 offset: (currentPage - 1) * perPage,
                 limit: perPage,
                 where: { userId: req.user_id, status: { [Op.or]: ['Ordered', 'Packed', 'Shipped'] } },
-                attributes: ["id", "delivery_date", "delivery_time", "payment_method", "sub_total", "delivery_charge", "total_amount", "status"],
+                attributes: ["id", "delivery_date", "delivery_time", "payment_method", "sub_total", "delivery_charge", "total_amount", "status", "rate", "rate_descriprtion"],
                 include: {
                     model: Order_item,
                     attributes: ["id", "quantity"],
@@ -428,17 +428,34 @@ exports.Sort = async (req, res, next) => {
 exports.Search = async (req, res, next) => {
     try {
         const term = req.query.term;
-    if(term){
-        if (term.length < 4) {
-            return res.status(400).json({ ErrorMessage: 'Term length must be more than 3 letters', status: 0 });
+        if (term) {
+            if (term.length < 4) {
+                return res.status(400).json({ ErrorMessage: 'Term length must be more than 3 letters', status: 0 });
+            }
         }
-    }
-    try {
-        const category = await Category.findAll({
-            where: { title: { [Op.like]: '%' + term + '%' } },
-            attributes: ['id', 'title', 'image'],
-            include: {
-                model: Sub_category,
+        try {
+            const category = await Category.findAll({
+                where: { title: { [Op.like]: '%' + term + '%' } },
+                attributes: ['id', 'title', 'image'],
+                include: {
+                    model: Sub_category,
+                    attributes: ['id', 'title', 'image', 'categoryId'],
+                    include: {
+                        model: Item,
+                        attributes: ['id', 'name', 'discreption', 'subCategoryId'],
+                        include: [{
+                            model: Item_image,
+                            attributes: ['id', 'image', 'itemId']
+                        }, {
+                            model: Item_size,
+                            attributes: ['id', 'size', 'price', 'itemId']
+                        }]
+                    }
+                }
+            });
+
+            const sub_category = await Sub_category.findAll({
+                where: { title: { [Op.like]: '%' + term + '%' } },
                 attributes: ['id', 'title', 'image', 'categoryId'],
                 include: {
                     model: Item,
@@ -451,14 +468,10 @@ exports.Search = async (req, res, next) => {
                         attributes: ['id', 'size', 'price', 'itemId']
                     }]
                 }
-            }
-        });
+            });
 
-        const sub_category = await Sub_category.findAll({
-            where: { title: { [Op.like]: '%' + term + '%' } },
-            attributes: ['id', 'title', 'image', 'categoryId'],
-            include: {
-                model: Item,
+            const item = await Item.findAll({
+                where: { name: { [Op.like]: '%' + term + '%' } },
                 attributes: ['id', 'name', 'discreption', 'subCategoryId'],
                 include: [{
                     model: Item_image,
@@ -467,34 +480,44 @@ exports.Search = async (req, res, next) => {
                     model: Item_size,
                     attributes: ['id', 'size', 'price', 'itemId']
                 }]
+            });
+
+            const total = category.length + sub_category.length + item.length;
+
+            if (total === 0) {
+                return res.status(404).json({ message: 'Data not found!', status: 1 });
             }
-        });
+            return res.json({ message: 'Searched successfully', items: item, categories: category, sub_categories: sub_category, total: total, status: 1 });
 
-        const item = await Item.findAll({
-            where: { name: { [Op.like]: '%' + term + '%' } },
-            attributes: ['id', 'name', 'discreption', 'subCategoryId'],
-            include: [{
-                model: Item_image,
-                attributes: ['id', 'image', 'itemId']
-            }, {
-                model: Item_size,
-                attributes: ['id', 'size', 'price', 'itemId']
-            }]
-        });
-
-        const total = category.length + sub_category.length + item.length;
-
-        if (total === 0) {
-            return res.status(404).json({ message: 'Data not found!', status: 1 });
         }
-        return res.json({ message: 'Searched successfully', items: item, categories: category, sub_categories: sub_category, total: total, status: 1 });
-
-    }
-    catch (error) {
-        console.log(error);
-        return res.status(400).json({ ErrorMessage: 'Failed to search!', status: 0 });
-    }
+        catch (error) {
+            console.log(error);
+            return res.status(400).json({ ErrorMessage: 'Failed to search!', status: 0 });
+        }
     } catch (error) {
         next(error);
     }
+}
+
+exports.rateOrder = async (req, res, next) => {
+
+    try {
+
+        const order = await Order.findByPk(req.query.orderId);
+
+        if (!order) {
+            return res.status(404).json({ ErrorMessage: "Order not found", status: 0 });
+        }
+
+        order.rate = req.body.rate;
+        order.rate_discription = req.body.rate_discription;
+
+        await order.save();
+
+        return res.status(200).json({ message: "Thank you for rating.", order_id: order.id, status: 1 });
+
+    } catch (error) {
+        next(error)
+    }
+
 }
