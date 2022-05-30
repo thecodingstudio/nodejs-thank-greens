@@ -510,7 +510,7 @@ exports.rateOrder = async (req, res, next) => {
         }
 
         order.rate = req.body.rate;
-        order.rate_discription = req.body.rate_discription;
+        order.rate_description = req.body.rate_description;
 
         await order.save();
 
