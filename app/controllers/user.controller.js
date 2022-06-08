@@ -199,9 +199,7 @@ exports.deleteAddress = (req, res, next) => {
 
             // Check whether address is exist or not.
             if (address === null) {
-                const error = new Error('Address not found!');
-                error.statusCode = 404;
-                throw error;
+                return res.status(404).json({ErrorMessage : "Address not found!",status:0})
             }
 
             // Detele address into database.
